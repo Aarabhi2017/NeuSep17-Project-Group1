@@ -144,7 +144,8 @@ public class VehicleImple implements IVehicleManager {
 			File file = new File(prefix); // directory path
 			String[] files = file.list();
 			for (String f : files) {
-				if (f.contains(dealerID)) {
+			    // Team: Lu Niu fix a bug caused by contains.
+				if (f.equalsIgnoreCase(dealerID)) {
 					fileReading = new FileReading(new File(prefix + f));
 					fileReading.checkID(v.getID());
 
@@ -169,9 +170,11 @@ public class VehicleImple implements IVehicleManager {
 					sb.append(v.getFuelType()).append("~");
 					sb.append(v.getEngine()).append("~");
 					sb.append(v.getTransmission()).append("~");
-					sb.append(v.getBattery());
-
-					bw.write(sb.toString() + "\n");
+					sb.append(v.getBattery()).append("~");
+					
+					// Fixed a bug caused by parsing vehicle. Team 2: Lu Niu.
+					sb.append(v.getOptionalFeatures());
+					bw.write("\n" + sb.toString());
 
 					bw.close();
 					isSuccess = true;
@@ -200,7 +203,7 @@ public class VehicleImple implements IVehicleManager {
 			File file = new File(prefix); // directory path
 			String[] files = file.list();
 			for (String f : files) {
-				if (f.contains(dealerID)) {
+				if (f.equalsIgnoreCase(dealerID)) {
 					fileReading = new FileReading(new File(prefix + f));
 
 					// read from vehicle files to HashMap
@@ -231,9 +234,10 @@ public class VehicleImple implements IVehicleManager {
 	private void writeToFiles(Map<DealerVehiclePair, String> tmpMap) throws IOException {
 		BufferedWriter bw = fileWriting.getBufferedWriter();
 		StringBuilder sb = new StringBuilder("id~webId~category~year~make~model~trim~type~price~photo~vin~entertainment~interiorColor~exteriorColor~fuelType~engine~transmission~battery");
-		sb.append("\n");
+		
+		// Team 2: Lu Niu, fixed a bug caused by new line. 
 		for (String s : tmpMap.values()) {
-			sb.append(s).append("\n");
+			sb.append("\n" + s);
 		}
 		bw.write(sb.toString());
 		bw.close();

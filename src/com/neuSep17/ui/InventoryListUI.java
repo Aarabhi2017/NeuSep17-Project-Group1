@@ -1,7 +1,12 @@
+//Team 6 Group 1
+//Team Leader: Tianyu Hou
+//Team Member: Zihan Ding, Jingyi Lin, Yujia Chen, Sihan Zhao;
+
 package com.neuSep17.ui;
 
 import java.awt.EventQueue;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -10,17 +15,21 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 
 import javax.swing.table.DefaultTableCellRenderer;
@@ -28,746 +37,805 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 
+import com.neuSep17.dao.IncentiveImple;
+import com.neuSep17.dao.PictureManager;
+import com.neuSep17.dao.VehicleImple;
+import com.neuSep17.dto.Incentive;
 import com.neuSep17.dto.Vehicle;
 import com.neuSep17.service.InventoryListService;
 
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+
 import java.awt.Font;
 import javax.swing.JTable;
 import javax.swing.JButton;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
-import javax.swing.JCheckBox;
 import javax.swing.JScrollPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.JRadioButton;
+import javax.swing.event.MouseInputListener;
+import javax.swing.JComboBox;
 
 public class InventoryListUI extends JFrame {
 
-	private JPanel contentPane;
-	private JPanel panelTop;
-	private JPanel leftPanel;
-	private JScrollPane scrollPane;
+    private JPanel contentPane;
+    private JPanel panelTop;
+    private JPanel leftPanel;
+    private JScrollPane scrollPane;
 
-	private JFrame frame;
+    private JFrame frame;
 
-	private static Point origin = new Point();
-	private JTextField txtFilter;
-	private JTextField txtSearch;
+    private static Point origin = new Point();
+    private JTextField txtFilter;
+    private JTextField txtSearch;
 
-	private ArrayList<Vehicle> list;
-	private ArrayList<Vehicle> filter;
-	private JTable table;
+    private ArrayList<Vehicle> list;
+    private ArrayList<Vehicle> filter;
+    private ArrayList<Incentive> incentiveList;
+    
+    private JTable table;
 
-	private JButton btnAdd;
-	private JButton btnEdit;
-	private JButton btnDelete;
+    private JButton btnAdd;
+    private JButton btnEdit;
+    private JButton btnDelete;
+    private JLabel labelBG;
+    private JLabel labelTitleIcon;
+    private JLabel lblSortby;
 
-	private JCheckBox chckbxYear;
-	private JCheckBox chckbxWebId;
-	private JCheckBox chckbxId;
-	private JCheckBox chckbxPrice;
-	private JCheckBox chckbxType;
-	private JCheckBox chckbxMake;
-	private JCheckBox chckbxModel;
-	private JCheckBox chckbxCategory;
-	private List<JCheckBox> checkBoxGroup;
-	private JLabel labelBG;
-	private JLabel labelTitle;
-	private JLabel labelTitleIcon;
+    private JButton close;
+    private JButton min;
 
-	private JButton close;
-	private JButton min;
+    private String selectedId;
+    private String newSelectedId;
+    
+    private DefaultTableModel model;
 
-	private String selectedId;
+    private final Color topBG = new Color(33, 33, 33);
+    private final Color topFG = new Color(255, 255, 255);
+    private final Color btnColor = new Color(198, 40, 40);
+    private final Color tableOddRow = new Color(255, 255, 255);
+    private final Color tableEvenRow = new Color(224, 224, 224);
+    private final Color tableHeaderColor = new Color(117, 117, 117);
 
-	private final Color topBG = new Color(33, 33, 33);
-	private final Color topFG = new Color(255, 255, 255);
-	private final Color btnColor = new Color(198, 40, 40);
-	private final Color tableOddRow = new Color(255,255,255);
-	private final Color tableEvenRow = new Color(224,224,224);
-	private final Color tableHeaderColor = new Color(117,117,117);
+    private final Font sortCombobxFont = new Font("Arial", Font.ITALIC, 15);
+    private final Font txtFont = new Font("Segoe UI Historic", Font.PLAIN, 22);
+    private final Font tableHeaderFont = new Font("Segoe UI Historic", Font.PLAIN, 15);
 
-	private final Font checkbxFont = new Font("Segoe UI Historic", Font.ITALIC, 21);
-	private final Font radioFont = new Font("Segoe UI Historic", Font.ITALIC, 20);
-	private final Font txtFont = new Font("Segoe UI Historic", Font.PLAIN, 22);
-	private final Font tableHeaderFont = new Font("Segoe UI Historic", Font.PLAIN, 15);
-	private final Font titleFont = new Font("Malgun Gothic", Font.BOLD, 30);
-	
-	private ButtonGroup sortGroup;
-	private JRadioButton rdbtnHighToLow;
-	private JRadioButton rdbtnLowToHigh;
-	
-	private boolean isAscending;
+    private final String[] headers = { "Id", "WebId", "Category", "Year", "Make", "Model", "Trim", "Bodytype", "Price","Discount","Photo","Vin","Entertainment"
+            ,"InteriorColor","ExteriorColor","Fueltype","Engine","Transmission","Battery","OptionalFeatures"};
+    
+    private JComboBox<String> sortComboBox;
+    private JComboBox<String> sortOrdercomboBox;
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					String f = InventoryListUI.class.getResource("asset/InventoryListUItest.txt").getPath();
-					File file = new File(f);
-					InventoryListUI frame = new InventoryListUI(file);
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
+    private boolean isAscending;
+    private int sortIndex;
+    /**
+     * Launch the application.
+     */
+    public static void main(String[] args) {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    String dealerName = "gmps-covert-country";
+                    InventoryListUI frame = new InventoryListUI(dealerName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
-	/**
-	 * Create the frame.
-	 */
-	public InventoryListUI(File file) {
-	    try{
+    /**
+     * Create the frame.
+     */
+    public InventoryListUI(String dealerName) {
+        init(dealerName);
+
+        registerPanel();
+
+        registerAEDBtn();
+
+        registerTable();
+
+        registerSearch();
+
+        registerFilter();
+
+        registerTitle();
+        
+        registerSortComboBox();
+
+        setCloseAndMin();
+
+        setDrag();
+    }
+    
+    //init basic
+    private void init(String dealerName) {
+        try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
-		list = InventoryListService.readAndGetVehicles(file);
-		filter = new ArrayList<>();
-		isAscending = true;
-		contentPane = new JPanel();
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setUndecorated(true);
-		setBounds(100, 100, 1300, 800);
-		contentPane.setLayout(null);
-		setLocationRelativeTo(null);
-		setContentPane(contentPane);
+        String f = "data/"+dealerName;
+        File file = new File(f);
+        this.file = file; // team 2: Lu Niu
+        list = InventoryListService.readAndGetVehicles(file);
+//        list.stream().forEach(vehicle -> {
+//            vehicle.getPhoto();
+//        });
+        /* commented by Bin Shi to optimize the loading speed
+        list.parallelStream().forEach(vehicle -> {
+            vehicle.getPhoto();
+        });
+        */
+        
+        PictureManager.initDealerPhotoLibrary(dealerName, list);
+        
+        incentiveList = getIncentives(dealerName);
+        filter = new ArrayList<>();
+        isAscending = true;
+        selectedId = "";
+        newSelectedId = "";
+        contentPane = new JPanel();
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setUndecorated(true);
+        setBounds(100, 100, 1300, 800);
+        contentPane.setLayout(null);
+        setLocationRelativeTo(null);
+        setContentPane(contentPane);
+        setVisible(true);
+        ToolTipManager.sharedInstance().setDismissDelay(80000);
+    }
+    
+    private ArrayList<Incentive> getIncentives(String dealerID) {
+        IncentiveImple incentiveImple = new IncentiveImple();
+        return incentiveImple.getIncentivesForDealer(dealerID);
+    }
+    
+    //sortBycomboBox
+    private void registerSortComboBox() {
+        lblSortby = new JLabel("SortBy:");
+        lblSortby.setFont(txtFont);
+        lblSortby.setForeground(topFG);
+        lblSortby.setBounds(39, 177, 94, 25);
+        panelTop.add(lblSortby);
+        
+        ArrayList<Vehicle> tmp = new ArrayList<>(list);
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<String>(headers);
+        sortComboBox = new JComboBox<String>(model);
+        sortComboBox.insertItemAt("Empty", 0);
+        sortComboBox.setFont(sortCombobxFont);
+        sortComboBox.setSelectedIndex(0);
+        sortComboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                sortIndex = ((JComboBox)e.getSource()).getSelectedIndex();
+                if(sortIndex == 0) {
+                    InventoryListService.fillTable(filter.size() == 0? list : filter,incentiveList, table);
+                }else {
+                    InventoryListService.sortByHeaders(filter.size() == 0? tmp : filter, isAscending, headers[sortIndex-1]);
+                    InventoryListService.fillTable(filter.size() == 0? tmp : filter,incentiveList, table);
+                }
+            }
+        });
+        sortComboBox.setBounds(129, 178, 122, 27);
+        panelTop.add(sortComboBox);
+        
+        //sortOrderBox
+        String[] item = {"Sort From Low To High", "Sort From High To Low"}; 
+        DefaultComboBoxModel<String> modelOrder = new DefaultComboBoxModel<>(item);
+        sortOrdercomboBox = new JComboBox<String>(modelOrder);
+        sortOrdercomboBox.setFont(sortCombobxFont);
+        sortOrdercomboBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int idx = ((JComboBox)e.getSource()).getSelectedIndex();
+                isAscending = idx == 0? true : false;
+                
+                if(sortIndex == 0) {
+                    InventoryListService.fillTable(filter.size() == 0? list : filter,incentiveList, table);
+                }else {
+                    InventoryListService.sortByHeaders(filter.size() == 0? tmp : filter, isAscending, headers[sortIndex-1]);
+                    InventoryListService.fillTable(filter.size() == 0? tmp : filter,incentiveList, table);
+                }
+            }
+        });
+        sortOrdercomboBox.setBounds(277, 178, 197, 27);
+        panelTop.add(sortOrdercomboBox);
+    }
 
-		registerPanel();
+    // close the window
+    private void exit() {
+        //only exit this window not the application
+        dispose();
+    }
 
-		registerAEDBtn();
+    // minimize
+    private void minimize() {
+        frame.setExtendedState(ICONIFIED);
+    }
 
-		registerRadio();
+    // Panel
+    private void registerPanel() {
+        // Left Panel
+        leftPanel = new JPanel();
+        leftPanel.setBounds(0, 0, 350, 800);
+        leftPanel.setLayout(null);
+        contentPane.add(leftPanel);
 
-		registerSortCheckBox();
+        labelBG = new JLabel("");
+        labelBG.setDisplayedMnemonic('0');
+        labelBG.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUIBG2.jpg")));
+        labelBG.setBounds(0, 0, 350, 800);
+        leftPanel.add(labelBG);
 
-		registerTable();
+        // Top Panel
+        panelTop = new JPanel();
+        panelTop.setBackground(topBG);
+        panelTop.setBounds(350, 0, 950, 220);
+        panelTop.setLayout(null);
+        contentPane.add(panelTop);
+    }
 
-		registerSearch();
-		
-		registerFilter();
-		
-		registerTitle();
+    // Filter
+    private void registerFilter() {
+        String placeholder = "FilterBy Any Keywords...";
+        txtFilter = new JTextField(placeholder);
+        txtFilter.setToolTipText("<html><h2 style =\"font-family : Arial; font-style: italic\">please type anything you want!"
+                + "<br/> The order of Keywords matters"
+                + "<br/> Please type the words following the order of headers"
+                + "<br/> No need to type the whole words</h2></html>");
+        txtFilter.setForeground(Color.GRAY);
+        txtFilter.setBackground(topBG);
+        txtFilter.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.WHITE));
+        txtFilter.setFont(txtFont);
+        txtFilter.setCaretColor(topFG);
+        txtFilter.setBounds(533, 100, 360, 40);
+        panelTop.add(txtFilter);
+        txtFilter.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (txtFilter.getText().equals(placeholder)) {
+                    txtFilter.setText("");
+                    txtFilter.setForeground(topFG);
+                }
+            }
 
-		setCloseAndMin();
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (txtFilter.getText().isEmpty()) {
+                    txtFilter.setForeground(Color.GRAY);
+                    txtFilter.setText(placeholder);
+                    InventoryListService.fillTable(list,incentiveList, table);
+                }
+            }
+        });
 
-		setDrag();
-		
-		rdbtnLowToHigh.setSelected(true);
-	}
+        txtFilter.getDocument().addDocumentListener(new DocumentListener() {
 
-	// close
-	private void exit() {
-		System.exit(0);
-	}
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                warn();
+            }
 
-	// minimize
-	private void minimize() {
-		frame.setExtendedState(ICONIFIED);
-	}
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                warn();
+            }
 
-	// Panel
-	private void registerPanel() {
-		// Left Panel
-		leftPanel = new JPanel();
-		leftPanel.setBounds(0, 0, 350, 800);
-		leftPanel.setLayout(null);
-		contentPane.add(leftPanel);
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                warn();
+            }
 
-		labelBG = new JLabel("");
-		labelBG.setDisplayedMnemonic('0');
-		labelBG.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUIBG2.jpg")));
-		labelBG.setBounds(0, 0, 350, 800);
-		leftPanel.add(labelBG);
+            public void warn() {
+                filter = InventoryListService.filter(filter, list, txtFilter);
+                InventoryListService.fillTable(filter, incentiveList,table);
+            }
+        });
+    }
 
-		// Top Panel
-		panelTop = new JPanel();
-		panelTop.setBackground(topBG);
-		panelTop.setBounds(350, 0, 950, 220);
-		panelTop.setLayout(null);
-		contentPane.add(panelTop);
-	}
-	
-	//Filter
-	private void registerFilter() {
-		String placeholder = "Filter";
-		txtFilter = new JTextField(placeholder);
-		txtFilter.setForeground(Color.GRAY);
-		txtFilter.setBackground(topBG);
-		txtFilter.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.WHITE));
-		txtFilter.setFont(txtFont);
-		txtFilter.setCaretColor(topFG);
-		txtFilter.setBounds(270, 171, 177, 29);
-		panelTop.add(txtFilter);
-		txtFilter.addFocusListener(new FocusListener() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				if (txtFilter.getText().equals(placeholder)) {
-					txtFilter.setText("");
-					txtFilter.setForeground(topFG);
-					clearSelection();
-				}
-			}
+    // Search
+    private void registerSearch() {
+        String placeholder = "SearchBy ID\\Vin\\Make\\Model\\...";
+        txtSearch = new JTextField(placeholder);
+        txtSearch.setForeground(Color.GRAY);
+        txtSearch.setToolTipText("<html><h2 style =\"font-family : Arial; font-style: italic\">please type anything you want!"
+                + "<br/>The keywords order doesn't matter "
+                + "<br/>But need to type the complete words"
+                + "<br/>type like eg: 2013 used chevrolet car"
+                + "<br/>will get the same result as: chervolet 2013 car used</h2></html>");
+        txtSearch.setBackground(topBG);
+        txtSearch.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.WHITE));
+        txtSearch.setFont(txtFont);
+        txtSearch.setCaretColor(topFG);
+        txtSearch.setBounds(533, 54, 360, 40);
+        panelTop.add(txtSearch);
+        txtSearch.addFocusListener(new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (txtSearch.getText().equals(placeholder)) {
+                    txtSearch.setText("");
+                    txtSearch.setForeground(topFG);
+//                    clearSelection();
+                }
+            }
 
-			@Override
-			public void focusLost(FocusEvent e) {
-				if (txtFilter.getText().isEmpty()) {
-					txtFilter.setForeground(Color.GRAY);
-					txtFilter.setText(placeholder);
-					InventoryListService.fillTable(list,table);
-				}
-			}
-		});
-		
-		txtFilter.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (txtSearch.getText().isEmpty()) {
+                    txtSearch.setForeground(Color.GRAY);
+                    txtSearch.setText(placeholder);
+                    InventoryListService.fillTable(list,incentiveList, table);
+                }
+            }
+        });
 
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				warn();
-			}
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
 
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				warn();
-			}
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                warn();
+            }
 
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				warn();
-			}
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                warn();
+            }
 
-			public void warn() {
-				filter = InventoryListService.filter(filter, list, txtFilter);
-				InventoryListService.fillTable(filter,table);
-			}
-		});
-	}
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                warn();
+            }
 
-	// Search
-	private void registerSearch() {
-		String placeholder = "Search";
-		txtSearch = new JTextField(placeholder);
-		txtSearch.setForeground(Color.GRAY);
-		txtSearch.setBackground(topBG);
-		txtSearch.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.WHITE));
-		txtSearch.setFont(txtFont);
-		txtSearch.setCaretColor(topFG);
-		txtSearch.setBounds(57, 172, 177, 29);
-		panelTop.add(txtSearch);
-		txtSearch.addFocusListener(new FocusListener() {
-			@Override
-			public void focusGained(FocusEvent e) {
-				if (txtSearch.getText().equals(placeholder)) {
-					txtSearch.setText("");
-					txtSearch.setForeground(topFG);
-					clearSelection();
-				}
-			}
+            public void warn() {
+                filter = InventoryListService.search(filter, list, txtSearch);
+                InventoryListService.fillTable(filter, incentiveList, table);
+            }
+        });
+    }
 
-			@Override
-			public void focusLost(FocusEvent e) {
-				if (txtSearch.getText().isEmpty()) {
-					txtSearch.setForeground(Color.GRAY);
-					txtSearch.setText(placeholder);
-					InventoryListService.fillTable(list,table);
-				}
-			}
-		});
-		
-		
-		txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+    // ADD Table
+    private void registerTable() {
+        Object[][] cellData = null;
 
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				warn();
-			}
+        model = new DefaultTableModel(cellData, headers) {
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+            
+            public Class getColumnClass(int column)
+            {
+                return getValueAt(0, column).getClass();
+            }
+        };
 
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				warn();
-			}
+        table = new JTable(model);
+        TableColumn column = null;
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.setRowHeight(50);
+        for (int i = 0; i < headers.length; i++) {
+            column = table.getColumnModel().getColumn(i);
+            switch (i) {
+            //Id
+            case 0:
+                column.setMinWidth(100);
+                column.setMaxWidth(100);
+                continue;
+            //webId
+            case 1:
+                column.setMinWidth(150);
+                column.setMaxWidth(150);
+                continue;
+            //Category
+            case 2:
+                column.setMinWidth(80);
+                column.setMaxWidth(80);
+                continue;
+            //Year
+            case 3:
+                column.setMinWidth(50);
+                column.setMaxWidth(50);
+                continue;
+            //Make
+            case 4:
+                column.setMinWidth(100);
+                column.setMaxWidth(100);
+                continue;
+            //Model
+            case 5:
+                column.setMinWidth(150);
+                column.setMaxWidth(150);
+                continue;
+            //Trim
+            case 6:
+                column.setMinWidth(300);
+                column.setMaxWidth(300);
+                continue;
+            //Bodytype
+            case 7:
+                column.setMinWidth(150);
+                column.setMaxWidth(150);
+                continue;
+            //Price
+            case 8:
+                column.setMinWidth(100);
+                column.setMaxWidth(100);
+                continue;
+            //Discount:
+            case 9:
+                column.setMinWidth(300);
+                column.setMaxWidth(300);
+                continue;
+            //Photo
+            case 10:
+                column.setMinWidth(90);
+                column.setMaxWidth(90);
+                continue;
+            //Vin
+            case 11:
+                column.setMinWidth(150);
+                column.setMaxWidth(150);
+                continue;
+            //Entertainment
+            case 12:
+                column.setMinWidth(600);
+                column.setMaxWidth(600);
+                continue;
+            //InteriorColor
+            case 13:
+                column.setMinWidth(150);
+                column.setMaxWidth(150);
+                continue;
+            //ExteriorColor
+            case 14:
+                column.setMinWidth(150);
+                column.setMaxWidth(150);
+                continue;
+            //Fueltype
+            case 15:
+                column.setMinWidth(100);
+                column.setMaxWidth(100);
+                continue;
+            //Engine
+            case 16:
+                column.setMinWidth(250);
+                column.setMaxWidth(250);
+                continue;
+            //Transmission
+            case 17:
+                column.setMinWidth(250);
+                column.setMaxWidth(250);
+                continue;
+            //Battery
+            case 18:
+                column.setMinWidth(100);
+                column.setMaxWidth(100);
+                continue;
+            //OptionalFeatures
+            case 19:
+                column.setMinWidth(350);
+                column.setMaxWidth(350);
+                continue;
+            }
+        }
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        InventoryListService.fillTable(list,incentiveList, table);
+        JTableHeader tableHeader = table.getTableHeader();
+        tableHeader.setReorderingAllowed(false);
+        tableHeader.setBackground(tableHeaderColor);
+        tableHeader.setForeground(topFG);
+        tableHeader.setFont(tableHeaderFont);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setRowMargin(0);
+        scrollPane = new JScrollPane(table);
+        scrollPane.setBounds(350, 220, 950, 580);
+        table.setPreferredScrollableViewportSize(new Dimension(1950, 580));
 
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				warn();
-			}
+        LinkCellRenderer renderer = new LinkCellRenderer();
 
-			public void warn() {
-				filter = InventoryListService.search(filter, list, txtSearch);
-				InventoryListService.fillTable(filter,table);
-			}
-		});
-	}
+        table.setDefaultRenderer(Object.class, renderer);
 
-	// Sort Function
-	private void registerSortCheckBox() {
-		
-		ArrayList<Vehicle> tmp = new ArrayList<>(list);
-		checkBoxGroup = new ArrayList<JCheckBox>();
-		chckbxWebId = new JCheckBox("WebId");
-		chckbxWebId.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxWebId);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxWebId.setFont(checkbxFont);
-		chckbxWebId.setBackground(topBG);
-		chckbxWebId.setForeground(topFG);
-		chckbxWebId.setBounds(433, 75, 134, 29);
-		panelTop.add(chckbxWebId);
+        table.addMouseListener(renderer);
+        table.addMouseMotionListener(renderer);
+        
+        
+        renderer.setHorizontalAlignment(JLabel.CENTER);
+        // set horizon scroll;
+        scrollPane.setAutoscrolls(true);
+        contentPane.add(scrollPane);
 
-		chckbxYear = new JCheckBox("Year");
-		chckbxYear.addActionListener(new ActionListener() {
+        scrollPane.setViewportView(table);
+    }
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxYear);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxYear.setFont(checkbxFont);
-		chckbxYear.setBackground(topBG);
-		chckbxYear.setForeground(topFG);
-		chckbxYear.setBounds(585, 75, 113, 29);
-		panelTop.add(chckbxYear);
+    // Title and Icon
+    private void registerTitle() {
+        labelTitleIcon = new JLabel("");
+        labelTitleIcon.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUIhome.png")));
+        labelTitleIcon.setBounds(30, 15, 438, 129);
+        panelTop.add(labelTitleIcon);
+    }
 
-		chckbxId = new JCheckBox("Id");
-		chckbxId.addActionListener(new ActionListener() {
+    // ADD DELETE EDIT BTN
+    private void registerAEDBtn() {
+        btnAdd = new JButton("Add");
+        btnAdd.setBorderPainted(false);
+        InventoryListUI that = this; // team 2: Lu Niu
+        btnAdd.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (getSelectedId() == null || getSelectedId().isEmpty()) { 
+                    InventoryEditUI tempui = new InventoryEditUI(null, that, true);
+                } else {
+                    for (Vehicle v : list) {
+                        if (v.getID().equals(getSelectedId())) {
+                            InventoryEditUI inventoryEditUI = new InventoryEditUI(v, that, true);
+                        }
+                    }
+                }
+            }
+        });
+        btnAdd.setFont(new Font("Segoe UI Historic", Font.PLAIN, 25));
+        btnAdd.setForeground(new Color(255, 255, 255));
+        btnAdd.setBackground(btnColor);
+        btnAdd.setBounds(533, 165, 120, 40);
+        panelTop.add(btnAdd);
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxId);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxId.setFont(checkbxFont);
-		chckbxId.setBackground(topBG);
-		chckbxId.setForeground(topFG);
-		chckbxId.setBounds(712, 75, 93, 29);
-		panelTop.add(chckbxId);
+        btnDelete = new JButton("Delete");
+        btnDelete.setBorderPainted(false);
+        //team2: yuanyuan jin start
+        btnDelete.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (getSelectedId() == null || getSelectedId().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Please Select An Item To Delete", "Error Message",
+                            JOptionPane.ERROR_MESSAGE);
+                } else {
+                    VehicleImple service = new VehicleImple();
+                    int clickButton = JOptionPane.showConfirmDialog(null, "Confirm delete ?", "Delete",
+                            JOptionPane.YES_NO_OPTION);
+                    Vehicle deleteV = null;
+                    if (clickButton == JOptionPane.YES_OPTION) {
+                        
+                        // delete selected data
+                        for(int i=0;i<list.size();i++){
+                            if(list.get(i).getID().equals(getSelectedId())){
+                                service.deleteVehicle(list.get(i).getWebID(), list.get(i).getID());
+                                list.remove(i);// remove the vehicle from the list object
+                            }
+                        }
+                    }
+                    
+                    // refreshTable
+                    refreshTable(null,deleteV);
+                }
+            }
+        });
+       //team 2 Yuanyuan jin end
+        btnDelete.setFont(new Font("Segoe UI Historic", Font.PLAIN, 25));
+        btnDelete.setForeground(new Color(255, 255, 255));
+        btnDelete.setBackground(btnColor);
+        btnDelete.setBounds(803, 165, 120, 40);
+        panelTop.add(btnDelete);
 
-		chckbxPrice = new JCheckBox("Price");
-		chckbxPrice.addActionListener(new ActionListener() {
+        btnEdit = new JButton("Edit");
+        btnEdit.setBorderPainted(false);
+        btnEdit.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (getSelectedId() == null || getSelectedId().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Please Select An Item To Edit", "Error Message", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    InventoryEditUI imf = new InventoryEditUI(getSelectedVehicle(), that, false);
+                }
+            }
+        });
+        btnEdit.setFont(new Font("Segoe UI Historic", Font.PLAIN, 25));
+        btnEdit.setForeground(new Color(255, 255, 255));
+        btnEdit.setBackground(btnColor);
+        btnEdit.setBounds(668, 165, 120, 40);
+        panelTop.add(btnEdit);
+    }
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxPrice);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxPrice.setFont(checkbxFont);
-		chckbxPrice.setBackground(topBG);
-		chckbxPrice.setForeground(topFG);
-		chckbxPrice.setBounds(822, 75, 97, 29);
-		panelTop.add(chckbxPrice);
+    private void setCloseAndMin() {
+        close = new JButton("");
+        close.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                exit();
+            }
+        });
+        close.setBorderPainted(false);
+        close.setBackground(topBG);
+        close.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUIclose.png")));
+        close.setBounds(905, 12, 32, 38);
+        panelTop.add(close);
 
-		chckbxMake = new JCheckBox("Make");
-		chckbxMake.addActionListener(new ActionListener() {
+        min = new JButton("");
+        min.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                minimize();
+            }
+        });
+        min.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUImin.png")));
+        min.setBorderPainted(false);
+        min.setBackground(topBG);
+        min.setBounds(860, 12, 32, 38);
+        panelTop.add(min);
+    }
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxMake);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxMake.setFont(checkbxFont);
-		chckbxMake.setBackground(topBG);
-		chckbxMake.setForeground(topFG);
-		chckbxMake.setBounds(822, 111, 105, 29);
-		panelTop.add(chckbxMake);
+    // setDrag
+    private void setDrag() {
+        frame = (JFrame) contentPane.getParent().getParent().getParent();
 
-		chckbxCategory = new JCheckBox("Category");
-		chckbxCategory.addActionListener(new ActionListener() {
+        frame.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                origin.x = e.getX();
+                origin.y = e.getY();
+            }
+        });
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxCategory);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxCategory.setFont(checkbxFont);
-		chckbxCategory.setBackground(topBG);
-		chckbxCategory.setForeground(topFG);
-		chckbxCategory.setBounds(433, 111, 134, 29);
-		panelTop.add(chckbxCategory);
+        frame.addMouseMotionListener(new MouseMotionAdapter() {
+            public void mouseDragged(MouseEvent e) {
+                Point p = frame.getLocation();
+                frame.setLocation(p.x + e.getX() - origin.x, p.y + e.getY() - origin.y);
+            }
+        });
+    }
 
-		chckbxModel = new JCheckBox("Model");
-		chckbxModel.addActionListener(new ActionListener() {
+    public String getSelectedId() {
+        return selectedId;
+    }
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxModel);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxModel.setFont(checkbxFont);
-		chckbxModel.setBackground(topBG);
-		chckbxModel.setForeground(topFG);
-		chckbxModel.setBounds(585, 111, 113, 29);
-		panelTop.add(chckbxModel);
+    public ArrayList<Vehicle> getList() {
+        return list;
+    }
+    
+    public Vehicle getSelectedVehicle() {
+        for(Vehicle v : list) {
+            if(v.getID().equals(selectedId)) {
+                return v;
+            }
+        }
+        return null;
+    }
+    
+ public class LinkCellRenderer extends DefaultTableCellRenderer implements MouseInputListener {
+        
+        //Mouse point row;
+        private int row = -1;
+        //Mouse point col;
+        private int col = -1;
+        //Table Listener;
+        private JTable table = null;
+        
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            //default style
+            this.table = table;
+//            this.setForeground(Color.BLACK);
+//            table.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            this.setText(value.toString());
+            if (row % 2 == 0)
+                setBackground(tableEvenRow);
+            if (row % 2 == 1)
+                setBackground(tableOddRow);
+            //link style
+//           if (row == this.row && column == this.col && column == 9) {
+//                    this.setForeground(Color.RED);
+//                    table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//                    return this;
+//            }
+            return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        }
 
-		chckbxType = new JCheckBox("Type");
-		chckbxType.addActionListener(new ActionListener() {
+        public void mouseExited(MouseEvent e) {
+            if (table != null) {
+                int oldRow = row;
+                int oldCol = col;
+                row = -1;
+                col = -1;
+                if (oldRow != -1 && oldCol != -1) {
+                    Rectangle rect = table.getCellRect(oldRow, oldCol, false);
+                    table.repaint(rect);
+                }
+            }
+        }
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				setSelectedCheckBox(chckbxType);
-				fillTableAfterSorting(tmp);
-			}
-		});
-		chckbxType.setFont(checkbxFont);
-		chckbxType.setBackground(topBG);
-		chckbxType.setForeground(topFG);
-		chckbxType.setBounds(712, 111, 93, 29);
-		panelTop.add(chckbxType);
-		
-		checkBoxGroup.add(chckbxCategory);
-		checkBoxGroup.add(chckbxId);
-		checkBoxGroup.add(chckbxMake);
-		checkBoxGroup.add(chckbxModel);
-		checkBoxGroup.add(chckbxPrice);
-		checkBoxGroup.add(chckbxType);
-		checkBoxGroup.add(chckbxWebId);
-		checkBoxGroup.add(chckbxYear);
-	}
+        public void mouseDragged(MouseEvent e) {
+        }
 
-	// ADD Table
-	private void registerTable() {
-		String[] headers = { "Id", "WebId", "Category", "Year", "Make", "Model", "Trim", "Type", "Price", "Photo" };
-		Object[][] cellData = null;
+        public void mouseMoved(MouseEvent e) {
+            if (table != null) {
+                Point p = e.getPoint();
+                int oldRow = row;
+                int oldCol = col;
+                row = table.rowAtPoint(p);
+                col = table.columnAtPoint(p);
+                if (oldRow != -1 && oldCol != -1) {
+                    Rectangle rect = table.getCellRect(oldRow, oldCol, false);
+                    table.repaint(rect);
+                }
+                if (row != -1 && col != -1) {
+                    Rectangle rect = table.getCellRect(row, col, false);
+                    table.repaint(rect);
+                }
+            }
+        }
 
-		DefaultTableModel model = new DefaultTableModel(cellData, headers) {
-			public boolean isCellEditable(int row, int column) {
-				return false;
-			}
-		};
+        public void mouseClicked(MouseEvent e) {
+            int selectedRow = table.getSelectedRow();
+            if(selectedId.isEmpty()) {
+                selectedId = (String) model.getValueAt(selectedRow, 0);
+            }else {
+                newSelectedId = (String) model.getValueAt(selectedRow, 0);
+            }
+            
+            if(!newSelectedId.isEmpty() && !newSelectedId.equals(selectedId)) {
+                selectedId = newSelectedId;
+                newSelectedId = "";
+            }
+            
+            if(selectedId.equals(newSelectedId)) {
+                table.clearSelection();
+                selectedId = "";
+                newSelectedId = "";
+                return;
+            }
+            
+            //link to web
+//           Point p = e.getPoint();
+//            int c = table.columnAtPoint(p);
+//            if(c != 9){
+//                return;
+//            }
+//            try {
+//                String s = table.getValueAt(selectedRow, c).toString();
+//                URL url = new URL(s.split("\"")[1]);
+//                Desktop.getDesktop().browse(url.toURI());
+//            } catch (Exception ex) {
+//                Logger.getLogger(LinkCellRenderer.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+        }
 
-		table = new JTable(model);
-		TableColumn column = null;
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		for (int i = 0; i < headers.length; i++) {
-			column = table.getColumnModel().getColumn(i);
-			switch (i) {
-			case 0:
-				column.setMinWidth(100);
-				column.setMaxWidth(100);
-				continue;
-			case 1:
-				column.setMinWidth(100);
-				column.setMaxWidth(100);
-				continue;
-			case 2:
-				column.setMinWidth(80);
-				column.setMaxWidth(80);
-				continue;
-			case 3:
-				column.setMinWidth(50);
-				column.setMaxWidth(50);
-				continue;
-			case 4:
-				column.setMinWidth(100);
-				column.setMaxWidth(100);
-				continue;
-			case 5:
-				column.setMinWidth(200);
-				column.setMaxWidth(200);
-				continue;
-			case 6:
-				column.setMinWidth(300);
-				column.setMaxWidth(300);
-				continue;
-			case 7:
-				column.setMinWidth(150);
-				column.setMaxWidth(150);
-				continue;
-			case 8:
-				column.setMinWidth(100);
-				column.setMaxWidth(100);
-				continue;
-			case 9:
-				column.setMinWidth(550);
-				column.setMaxWidth(550);
-				continue;
-			}
-		}
-		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		
-		table.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
-				int selectedRow = table.getSelectedRow();
-				selectedId = (String) model.getValueAt(selectedRow, 0);
-				System.out.println(selectedId);
-			}
-		});
-		
-		InventoryListService.fillTable(list,table);
-		JTableHeader tableHeader = table.getTableHeader();
-		tableHeader.setReorderingAllowed(false);
-		tableHeader.setBackground(tableHeaderColor);
-		tableHeader.setForeground(topFG);
-		tableHeader.setFont(tableHeaderFont);
-		table.setShowGrid(false);
-		table.setIntercellSpacing(new Dimension(0,0));
-		table.setRowMargin(0);
-		scrollPane = new JScrollPane(table);
-		scrollPane.setBounds(350, 220, 950, 580);
-		table.setPreferredScrollableViewportSize(new Dimension(1950, 580));
-		// set ceter alignment;
-		DefaultTableCellRenderer tablecell = new DefaultTableCellRenderer() {
-			 @Override  
-             public Component getTableCellRendererComponent(JTable table,  
-                     Object value, boolean isSelected, boolean hasFocus,  
-                     int row, int column) {  
-                 if (row % 2 == 0)  
-                     setBackground(tableEvenRow); 
-                 else if (row % 2 == 1)  
-                     setBackground(tableOddRow);  
-                 return super.getTableCellRendererComponent(table, value,  
-                         isSelected, hasFocus, row, column);  
-             }  
-		};
-		tablecell.setHorizontalAlignment(JLabel.CENTER);
-		table.setDefaultRenderer(Object.class, tablecell);
-		// set horizon scroll;
-		scrollPane.setAutoscrolls(true);
-		contentPane.add(scrollPane);
+        @Override
+        public void mousePressed(MouseEvent e) {
+        }
 
-		scrollPane.setViewportView(table);
-	}
-	
-	//Title and Icon
-	private void registerTitle() {
-		labelTitleIcon = new JLabel("");
-		labelTitleIcon.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUIhome.png")));
-		labelTitleIcon.setBounds(43, 11, 130, 129);
-		panelTop.add(labelTitleIcon);
-		labelTitle = new JLabel("Inventory List Management");
-		labelTitle.setFont(titleFont);
-		labelTitle.setForeground(topFG);
-		labelTitle.setBounds(199, 12, 481, 61);
-		panelTop.add(labelTitle);
-	}
+        @Override
+        public void mouseReleased(MouseEvent e) {
+        }
 
-	// ADD DELETE EDIT BTN
-	private void registerAEDBtn() {
-		btnAdd = new JButton("Add");
-		btnAdd.setBorderPainted(false);
-		btnAdd.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-
-			}
-		});
-		btnAdd.setFont(new Font("Segoe UI Historic", Font.PLAIN, 25));
-		btnAdd.setForeground(new Color(255, 255, 255));
-		btnAdd.setBackground(btnColor);
-		btnAdd.setBounds(545, 165, 110, 40);
-		panelTop.add(btnAdd);
-
-		btnDelete = new JButton("Delete");
-		btnDelete.setBorderPainted(false);
-		btnDelete.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				for (Vehicle v : list) {
-					if (v.getID().equals(getSelectedId())) {
-
-					}
-				}
-			}
-		});
-		btnDelete.setFont(new Font("Segoe UI Historic", Font.PLAIN, 25));
-		btnDelete.setForeground(new Color(255, 255, 255));
-		btnDelete.setBackground(btnColor);
-		btnDelete.setBounds(805, 165, 110, 40);
-		panelTop.add(btnDelete);
-
-		btnEdit = new JButton("Edit");
-		btnEdit.setBorderPainted(false);
-		btnEdit.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-
-			}
-		});
-		btnEdit.setFont(new Font("Segoe UI Historic", Font.PLAIN, 25));
-		btnEdit.setForeground(new Color(255, 255, 255));
-		btnEdit.setBackground(btnColor);
-		btnEdit.setBounds(675, 165, 110, 40);
-		panelTop.add(btnEdit);
-	}
-
-	private void setCloseAndMin() {
-		close = new JButton("");
-		close.addMouseListener(new MouseAdapter() {
-			public void mouseClicked(MouseEvent e) {
-				exit();
-			}
-		});
-		close.setBorderPainted(false);
-		close.setBackground(topBG);
-		close.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUIclose.png")));
-		close.setBounds(905, 12, 32, 38);
-		panelTop.add(close);
-
-		min = new JButton("");
-		min.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				minimize();
-			}
-		});
-		min.setIcon(new ImageIcon(InventoryListUI.class.getResource("asset/InventoryListUImin.png")));
-		min.setBorderPainted(false);
-		min.setBackground(topBG);
-		min.setBounds(860, 12, 32, 38);
-		panelTop.add(min);
-	}
-
-	private void registerRadio() {
-		ArrayList<Vehicle> tmp = new ArrayList<>(list);
-		rdbtnHighToLow = new JRadioButton("Sort High To Low");
-		rdbtnHighToLow.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if(rdbtnHighToLow.isSelected()) {
-					isAscending = false;
-					ArrayList<Vehicle> sortList = filter.size() == 0? tmp : filter;
-					if(sortByCheckState(sortList)) {
-						InventoryListService.fillTable(sortList, table);
-					}else {
-						InventoryListService.fillTable(list,table);
-					}
-				}
-			}
-		});
-		rdbtnHighToLow.setFont(radioFont);
-		rdbtnHighToLow.setBounds(198, 75, 178, 29);
-		rdbtnHighToLow.setBackground(topBG);
-		rdbtnHighToLow.setForeground(topFG);
-		
-
-		rdbtnLowToHigh = new JRadioButton("Sort Low To High");
-		rdbtnLowToHigh.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				isAscending = true;
-				ArrayList<Vehicle> sortList = filter.size() == 0? tmp : filter;
-				if(sortByCheckState(sortList)) {
-					InventoryListService.fillTable(sortList, table);
-				}else {
-					InventoryListService.fillTable(list,table);
-				}
-			}
-		});
-		rdbtnLowToHigh.setFont(radioFont);
-		rdbtnLowToHigh.setBounds(198, 111, 178, 29);
-		rdbtnLowToHigh.setBackground(topBG);
-		rdbtnLowToHigh.setForeground(topFG);
-		
-		
-		sortGroup = new ButtonGroup();
-		sortGroup.add(rdbtnHighToLow);
-		sortGroup.add(rdbtnLowToHigh);
-		
-		panelTop.add(rdbtnHighToLow);
-		panelTop.add(rdbtnLowToHigh);
-	}
-
-	// setDrag
-	private void setDrag() {
-		frame = (JFrame) contentPane.getParent().getParent().getParent();
-
-		frame.addMouseListener(new MouseAdapter() {
-			public void mousePressed(MouseEvent e) {
-				origin.x = e.getX();
-				origin.y = e.getY();
-			}
-		});
-
-		frame.addMouseMotionListener(new MouseMotionAdapter() {
-			public void mouseDragged(MouseEvent e) {
-				Point p = frame.getLocation();
-				frame.setLocation(p.x + e.getX() - origin.x, p.y + e.getY() - origin.y);
-			}
-		});
-	}
-	
-	//clear Selected CheckBox;
-	private void clearSelection() {
-		for(JCheckBox cbx : checkBoxGroup) {
-			cbx.setSelected(false);
-		}
-	}
-	
-	//set Selected to CheckBox;
-	private void setSelectedCheckBox(JCheckBox c) {
-		for(JCheckBox cbx : checkBoxGroup) {
-			if(cbx == c) continue;
-			cbx.setSelected(false);
-		}
-	}
-	
-	//fill table using sort result;
-	private void fillTableAfterSorting(ArrayList<Vehicle> tmp) {
-		ArrayList<Vehicle> sortList = filter.size() == 0? tmp : filter;
-		if(sortByCheckState(sortList)) {
-			InventoryListService.fillTable(sortList,table);
-		}else {
-			InventoryListService.fillTable(list,table);
-		}
-	}
-	
-	//check State
-	private boolean sortByCheckState(ArrayList<Vehicle> sortList) {
-		if (chckbxWebId.isSelected()) {
-			InventoryListService.sortByWebId(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxCategory.isSelected()) {
-			InventoryListService.sortByCategory(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxId.isSelected()) {
-			InventoryListService.sortById(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxMake.isSelected()) {
-			InventoryListService.sortByMake(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxModel.isSelected()) {
-			InventoryListService.sortByModel(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxPrice.isSelected()) {
-			InventoryListService.sortByPrice(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxType.isSelected()) {
-			InventoryListService.sortByType(sortList,isAscending);
-			return true;
-			
-		} else if (chckbxYear.isSelected()) {
-			InventoryListService.sortByYear(sortList,isAscending);
-			return true;
-			
-		}
-		return false;
-	}
-	
-	public String getSelectedId() {
-		return selectedId;
-	}
-
-	public ArrayList<Vehicle> getList() {
-		return list;
-	}
+        @Override
+        public void mouseEntered(MouseEvent e) {
+        }
+    }
+    
+    // team 2: Lu Niu
+    private File file;
+    public void refreshTable(Vehicle addedVehicle, Vehicle deletedVehicle) {
+        if (addedVehicle != null) {
+            Vehicle vToBeRemoved = null;
+            for (Vehicle v : list) {
+                if (v.getWebID().equalsIgnoreCase(addedVehicle.getWebID()) && 
+                        v.getID().equalsIgnoreCase(addedVehicle.getID())) {
+                    vToBeRemoved = v;
+                }
+            }
+            
+            list.remove(vToBeRemoved);
+            list.add(addedVehicle);   
+        }       
+        
+        if (deletedVehicle != null) {
+            list.remove(deletedVehicle);
+        }
+        
+        InventoryListService.fillTable(list, incentiveList, table);
+    }
 }

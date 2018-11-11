@@ -4,6 +4,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
+
+import com.neuSep17.dao.PictureManager;
+import com.neuSep17.dao.PropertyManager;
+
+import java.awt.Image;
 import java.lang.reflect.Field;
 
 public class Vehicle implements Comparable<Vehicle> {
@@ -29,8 +34,9 @@ public class Vehicle implements Comparable<Vehicle> {
     private String battery;
     private String optionalFeatures;
 
-
-
+    //add discount filed for conveniencly used by InventoryList;
+    private double discount;
+    
     private String sortingField;
        
         
@@ -74,7 +80,7 @@ public class Vehicle implements Comparable<Vehicle> {
         public void setMake(String make) {
         	this.make=make;
         }
-        public void setModle(String model) {
+        public void setModel(String model) {
         	this.model=model;
         }
         public void setTrim(String trim) {
@@ -125,6 +131,12 @@ public class Vehicle implements Comparable<Vehicle> {
         }
         public URL getPhotoURL() {
         	return photoUrl;
+        }
+        
+        //get the actual image from the photo library or the Internet (team 2: Bin Shi)
+        //Note: if this image is not valid, return null instead.
+        public Image getPhoto(){
+            return PictureManager.getVehiclePhoto(photoUrl);
         }
 
     public String getVin() {
@@ -231,5 +243,14 @@ public class Vehicle implements Comparable<Vehicle> {
         		}
         	}
         	return valueToCompare;
-        }    
+        } 
+        
+    //Add Discount Info for InventoryList
+    public double getDiscount() {
+        return discount;
+    }
+    
+    public void setDiscount(double discount) {
+        this.discount = discount;
+    }
 }
